@@ -9,7 +9,7 @@ pairwise distance among the spline approximation of the peaks and  among their
 derivatives.
 }
 \usage{
-distance_peak(object, p = 1)
+distance_peak(object, p = 1, rescale = FALSE)
 }
 
 \arguments{
@@ -22,6 +22,8 @@ distance_peak(object, p = 1)
   for the definition of the norms.
   }
 
+  \item{rescale}{logical. If \code{TRUE} the distance among \emph{scaled peaks} is computed. For the 
+  definition of \emph{scaled peaks} see \link[=smooth_peak-method]{smooth_peak}.}
 }
 \details{
 This function computes the pairwise distance of a set of \eqn{N} peaks. 

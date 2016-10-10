@@ -1,13 +1,14 @@
 
 setGeneric("summit_peak", function(object, ... ) standardGeneric("summit_peak"))
 
-summit.GRange <- function(object, summit = NULL)
+summit.GRange <- function(object, summit = NULL, rescale = FALSE)
 {
     
   if (class(object) != "GRanges")
   {
         stop('The first object is not a GRanges object.')
   }
+    
     
   if (is.null(summit))
   {
@@ -17,7 +18,21 @@ summit.GRange <- function(object, summit = NULL)
     # is not present, the summit will be computed 
     # from the counts, but it can be a noisy definition.
     # error if both spline and counts are NULL
-    
+    if(rescale)
+    {
+        if (is.null(object$spline_rescaled))
+        {
+            stop('Provide the rescaled spline.')
+        }
+        matrix_peaks <- unlist.counts(object$spline_rescaled, sapply(object$spline_rescaled, length))
+        
+        value_max <- apply(matrix_peaks, 1, max, na.rm=TRUE)
+        point_max <- apply(matrix_peaks, 1, function(x){which(x == max(x, na.rm=TRUE))[1]})
+        
+        elementMetadata(object)[["summit_spline_rescaled"]] <- point_max
+    }
+      
+      
     if (is.null(object$spline))
     {
         if (is.null(object$counts))
@@ -54,6 +69,10 @@ summit.GRange <- function(object, summit = NULL)
     }
   }else
   {
+    if (rescale)
+    {
+        stop('impossible to provide the center of the rescaled peak')
+    }
     # if summit is a vector, it will be used as the summit of the peak.
     if (length(summit)!= length(object))
     {
@@ -70,11 +89,13 @@ summit.GRange <- function(object, summit = NULL)
     elementMetadata(object)[["summit_spline"]] <- summit
   }
   
+    
   return(object)
 }
 
 
-setMethod("summit_peak", signature=(object = "GRanges"), function(object, summit=NULL) summit.GRange(object, summit))
+setMethod("summit_peak", signature=(object = "GRanges"), function(object, summit=NULL, rescale =FALSE) 
+    summit.GRange(object, summit, rescale))
 
 ####################################
 ####### Auxiliary R funation #######

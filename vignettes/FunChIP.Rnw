@@ -190,10 +190,11 @@ the derivative of the \Rcode{counts} vector $c$ for the data $i$: $c = c(i)$, wh
 $s'(x_i)$ is the evaluation of the first derivative $s' = s'(i)$ on the genomic coordinates.
 For further details on
 the spline definition see the \Rfunction{spline} function of the \CRANpkg{fda} package.
+\item\textit{Scaling of the peaks.} This optional preprocessing step makes all the curves having the same width and area. In particular all the abscissa grid are scaled to become equal to the smallest grid throughout the data, while $y-$values are scaled to make areas of all the curves equal to 1.
 \end{itemize}
 The \Rfunction{smooth\_peak} method approximates the \Rcode{counts}
-metadata by removing the background and computing the spline.
-It automatically chooses the optimal $\lambda$ parameter
+metadata by removing the background, computing the spline and potentially defining the scaled approximation.
+Focusing on the spline approximation, \Rfunction{smooth\_peak} automatically chooses the optimal $\lambda$ parameter
 according to the $GCV$ criteria; the user can
 decide whether to consider the data or the derivatives to compute the $SSE$.
 
@@ -210,7 +211,7 @@ decide whether to consider the data or the derivatives to compute the $SSE$.
 
 peaks.smooth <- smooth_peak(peaks, lambda = 10^(-4:12),
                             subsample.data = 50, GCV.derivatives = TRUE,
-                            plot.GCV = TRUE)
+                            plot.GCV = TRUE, rescale = FALSE )
 
 @
 \incfig{FunChIP-figureGCV}{0.8\textwidth}{Generalized Cross Validation index.}
@@ -227,6 +228,14 @@ peaks.smooth <- smooth_peak(peaks, lambda = 10^6,
                              plot.GCV = FALSE)
 head(peaks.smooth)
 
+# mantaining this choice of lambda smooth_peak
+# can also define the scaled approximation
+# of the spline
+
+peaks.smooth.scaled <- smooth_peak(peaks, lambda = 10^6,
+                             plot.GCV = FALSE, rescale = TRUE)
+head(peaks.smooth.scaled)
+
 @
 
 Now the \Rclass{GRanges} object contains, besides \Rcode{counts}, 5 new metadata
@@ -240,13 +249,15 @@ With the introduction of the smoothing, counts at the edges of the peak are conn
 with regularity to 0, and therefore new values different from zeros may be introduced.
 In order to maintain regularity, the grid is extended up to the new boundaries.
 
-Once the spline approximation is defined, the summit of the smoothed peak,
+Adding to \Rfunction{smooth\_peak} the option \Rcode{rescale = TRUE} the method, beside the 5 metadata columns previously introduced, returns 2 more metadata columns with the scaled approximation of the spline and its derivatives.
+
+Once the spline approximation is defined, the summit of the smoothed peak (or even of the scaled peak),
 i.e. of its spline approximation,
 can be detected. The summit will be used to initialize the peak alignment procedure, described in Section
 \ref{sect:kmean}, and it can either be a
 user-defined parameter, stored in a vector of the same length of the \Rcode{GR}, or
 automatically computed as the maximum height of the spline. The summit is stored in the
-new metadata column \Rcode{summit\_spline}.
+new metadata column \Rcode{summit\_spline}. If the \Rcode{rescale} option is set to \Rcode{TRUE} the summit of the scaled approximation is also returned in the metadata colum \Rcode{summit\_spline\_rescaled}.
 
 <<summit>>=
 
@@ -256,10 +267,16 @@ new metadata column \Rcode{summit\_spline}.
 peaks.summit <- summit_peak(peaks.smooth)
 head(peaks.summit)
 
+# peaks.summit can identify also the maximum
+# point of the scaled approximation
+
+peaks.summit.scaled <- summit_peak(peaks.smooth.scaled, 
+                            rescale = TRUE)
+head(peaks.summit.scaled)
 @
 
 \section{The k-mean alignment algorithm and the \Rfunction{cluster\_peak} method }\label{sect:kmean}
-The k-mean alignment algorithm is an efficient method to classify functional data allowing for general transformation of abscissae \cite{kma}; this general method is implemented in the package  \CRANpkg{fdakma}.
+The k-mean alignment algorithm is an efficient method to classify functional data allowing for general transformation of abscissae \cite{kma}; this general method is implemented in the package  \CRANpkg{fdakma} and various applications to real dataset are introduced in \cite{Sangalli:2014}, \cite{Bernardi:2014}, \cite{Patriarca:2014}.
 
 In particular, given
 
@@ -319,7 +336,7 @@ Given a set of functions $s_1, \ldots, s_n$ and a number $K$ of clusters\\
 \template random choice (if not provided) of the initial centers of the clusters $c_1 \ldots, c_k$\\
 \While{ decrease of the distance higher than a fixed threshold }{
 \ForEach {$i \in 1:n$} {
-\align $s_i$ is aligned to each template $c_k$: the optimal warping function $h_{i,k}^{\star}$ in $\mathcal{W}$ is computed
+\align $s_i$ is aligned to each template $c_k$: the optimal warping function $h_{i,k}^{\star}$ in $\mathcal{W}$ is detected
 $$
 h^{\star}_{i,k} = \textrm{argmin}_{h \in \mathcal{W}} \,\, d(c_k, x_i \circ h)
 $$
@@ -458,12 +475,16 @@ The gap between the red and the black line, instead, shows the decrease of the d
 when the shift is introduced.
 \end{itemize}
 
+It is relevant to point out that the algorithm can be run both on the original data and on the scaled peaks, depending on the focus of the analysis. The logic paramter \Rcode{rescale} allows the user to choose.
+
 <<figurek, fig=TRUE, include=FALSE, width=8, height=8>>=
 
 # classification of the smooth peaks in different
 # numbers of clusters, from 1 ( no distinction, only shift )
-# to 6.
+# to 6. 
 
+# here the analysis is run on the spline approximation
+# without scaling
 peaks.cluster <- cluster_peak(peaks.summit, parallel = FALSE ,  seeds=1:6,
                                    n.clust = 1:6, shift = NULL,
                                    weight = 1, alpha = 1, p = 2, t.max = 2,
@@ -471,14 +492,33 @@ peaks.cluster <- cluster_peak(peaks.summit, parallel = FALSE ,  seeds=1:6,
 head(peaks.cluster)
 
 @
-\incfig{FunChIP-figurek}{0.5\textwidth}{Global distance within clusters.}
-     {Global distance of the peaks form the corresponding template, as a function of the number of clusters $k$.}
+
+
+<<figurekScaled, fig=TRUE, include=FALSE, width=8, height=8>>=
+
+# here the analysis is run on the spline approximation
+# with scaling
+peaks.cluster.scaled <- cluster_peak(peaks.summit.scaled, parallel = FALSE ,  seeds=1:6,
+                                     n.clust = 1:6, shift = NULL,
+                                     weight = 1, alpha = 1, p = 2, t.max = 2,
+                                     plot.graph.k = TRUE, verbose = FALSE, 
+                                     rescale = TRUE)
+head(peaks.cluster.scaled)
+
+@
+
+\begin{figure} \label{graphK}
+\centering
+\includegraphics [width = 0.4\textwidth]{FunChIP-figurek}
+\includegraphics [width = 0.4\textwidth]{FunChIP-figurekScaled}
+\caption{\textbf{Global distance within clusters.} Global distance of the peaks form the corresponding template, as a function of the number of clusters $k$. In the left panel the graph for the original spline approximation, while in the right panel restuls are relative to the scaled approximation.}
+\end{figure}
 
 The particular case of k-mean alignment with $k = 1$ clusters can be used to highlight the effects of the
 alignment of the peaks: no grouping is performed, just the shifts are computed. Therefore, the decrease
 of the global distance is solely due to a change of the abscissae of the functions,
 as Figure \ref{FunChIP-alignment} shows.
- Moreover, from Figure \ref{FunChIP-figurek} we can deduce that, for this case
+ Moreover, focusing for exemple on the first panel of Figure \ref{graphK}, we can deduce that, for this case
  \begin{itemize}
  \item the alignment can effectively decrease the distance, for exemple for $k = 6$, the gap between red and black line is significant;
  \item the alignment may change the optimal $k$: looking at the black line, one would have chosen $k=4$, while the
@@ -488,7 +528,7 @@ one less cluster is needed; it has to be noted that the distance
 obtained with $k=3$ and alignment is very similar to the one obtained with $k=4$ and no alignment.
  \end{itemize}
 
-Therefore, for this case, one possible classification is the one associated to $k=3$ with shift.
+Therefore, for this case, one possible classification is the one associated to $k=3$ with shift. On the contray for the scaled peaks the value of $k$ we can identify as crucial is $k=2$ and shift is relevant since it reduces a lot the global distance. 
 The results for this specific number of clusters can then be selected with the \Rfunction{choose\_k}
 method:
 
@@ -500,6 +540,15 @@ peaks.classified.short <- choose_k(peaks.cluster, k = 3,
 head(peaks.classified.short)
 
 peaks.classified.extended <- choose_k(peaks.cluster, k = 3,
+                                  shift = TRUE, cleaning = FALSE)
+
+# and for the scaled version for k =2 and alignment
+
+peaks.classified.scaled.short <- choose_k(peaks.cluster.scaled, k = 2,
+                                  shift = TRUE, cleaning = TRUE)
+head(peaks.classified.scaled.short)
+
+peaks.classified.scaled.extended <- choose_k(peaks.cluster.scaled, k = 2,
                                   shift = TRUE, cleaning = FALSE)
 @
 
@@ -516,7 +565,7 @@ for displaying ChIP-Seq peaks. In particular, it allows to
 plot the raw counts obtained by the \Rfunction{pileup\_peak} method, as
 in Figure \ref{FunChIP-plot1}. It can also plot
 smoothed peaks, possibly centered around the summit, as in
-Figure \ref{two_plots}.
+Figure \ref{two_plots}, or scaled as in Figure \ref{scaled} and centerd.
 
 <<plot1, fig=TRUE, include=FALSE, width=8, height=8>>=
 
@@ -546,6 +595,24 @@ plot_peak(peaks.summit, index = 1:10, line.plot = 'spline')
 
 @
 
+<<plot2bis, fig=TRUE, include=FALSE, width=8, height=8>>=
+
+# plot of the smoothed approximation of the first 10 peaks;
+# the scaled functions are plotted.
+plot_peak(peaks.smooth.scaled, index = 1:10, 
+          line.plot = 'spline', rescale = TRUE)
+
+@
+
+<<plot3bis, fig=TRUE, include=FALSE, width=8, height=8>>=
+
+# plot of the scaled approximation of the first 10 peaks,
+# centering peaks around their summits
+plot_peak(peaks.summit.scaled, index = 1:10, 
+          line.plot = 'spline', rescale = TRUE)
+
+@
+
 \begin{figure} \label{two_plots}
 \centering
 \includegraphics [width = 0.4\textwidth]{FunChIP-plot2}
@@ -554,15 +621,19 @@ plot_peak(peaks.summit, index = 1:10, line.plot = 'spline')
 peaks are shown, while in the right panel the same peaks are
 centered around their summits.}
 \end{figure}
-% \incfig{FunChIP-plot3}{0.6\textwidth}{10 peaks: splines with summit.}
-%      {Representation of the original peaks (with spline smoothing) as counts
-%      on the basis of the genome. Peaks are centered around their summit.
-%      For each peak the 0 point
-%      of the abscissa is the summit.}
 
-\incfig{FunChIP-plotBOTH}{0.5\textwidth}{Read coverage and spline approximation.}
-     {Plot of the original read coverage of a peak and its smoothing (spline approximation), centered
-     around the summit.}
+\begin{figure} \label{two_plots_bis}
+\centering
+\includegraphics [width = 0.4\textwidth]{FunChIP-plot2bis}
+\includegraphics [width = 0.4\textwidth]{FunChIP-plot3bis}
+\caption{\textbf{10 spline-smoothed and scaled peaks.} In the left panel, scaled
+peaks are shown, while in the right panel the same peaks are
+centered around their summits.}
+\end{figure}
+
+From the comparison of Figure \ref{two_plots} and Figure \ref{two_plots_bis}
+it is clear how the scaling affects the shape of splines. Now peaks are no more 
+related to the magnitude, but just to their shapes.
 
 Moreover, plotting both raw counts and spline is also possible:
 Figure \ref{FunChIP-plotBOTH} shows a single
@@ -579,26 +650,49 @@ plot_peak(peaks.summit, index = 3, line.plot = 'both', col = 'darkblue')
 
 @
 
-\incfig{FunChIP-plot4}{0.8\textwidth}{Peaks divided in the three clusters}
+\incfig{FunChIP-plotBOTH}{0.4\textwidth}{Read coverage and spline approximation.}
+     {Plot of the original read coverage of a peak and its smoothing (spline approximation), centered
+     around the summit.}
+     
+\incfig{FunChIP-plot4}{0.95\textwidth}{Peaks divided in the three clusters}
      {The same spline-smoothed peaks are plotted in
      grey, and for each panel the peaks in the corresponding cluster are colored to show their different shapes.
      Peaks are aligned with the shift coefficients obtained by the k-mean
      alignment algorithm.}
+     
+\incfig{FunChIP-plot4bis}{0.8\textwidth}{Scaled peaks divided in the three clusters}
+     {The same spline-smoothed scaled peaks are plotted in
+     grey, and for each panel the peaks in the corresponding cluster are colored to show their different shapes.
+     Peaks are aligned with the shift coefficients obtained by the k-mean
+     alignment algorithm.}
 
-<<plot4, fig=TRUE, include=FALSE, width=12, height=5.8>>=
+<<plot4, fig=TRUE, include=FALSE, width=18, height=6>>=
 
 # plot of the results of the kmean alignment.
 # Peaks are plotted in three different panels
 # according to the clustering results.
 
 plot_peak(peaks.cluster, index = 1:100, line.plot = 'spline',
-          shift = TRUE, k = 3, cluster.peak = TRUE)
+          shift = TRUE, k = 3, cluster.peak = TRUE, 
+          col = topo.colors(3))
+
+@
+
+<<plot4bis, fig=TRUE, include=FALSE, width=10, height=5.8>>=
+
+# plot of the results of the kmean alignment.
+# Scaled peaks are plotted in three different panels
+# according to the clustering results.
+
+plot_peak(peaks.cluster.scaled, index = 1:100, line.plot = 'spline',
+          shift = TRUE, k = 2, cluster.peak = TRUE, rescale = TRUE, 
+          col = heat.colors(2))
 
 @
 
 Finally, the  \Rfunction{plot\_peak} method allows to plot the results
-of the clustering via the k-mean alignment. In Figure \ref{FunChIP-plot4},
-smoothed peaks are divided into the three clusters and plotted with
+of the clustering via the k-mean alignment. In Figure \ref{FunChIP-plot4} and  Figure \ref{FunChIP-plot4bis},
+smoothed and scaled peaks are divided into the three clusters and plotted with
 the optimal shift obtained with the alignment.
 
 

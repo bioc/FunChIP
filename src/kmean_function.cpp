@@ -15,7 +15,6 @@
 #include<Rmath.h>
 
 
-
 typedef std::pair<int, double> shift_dist;
 
 peak shift(const peak &_start, const int t);

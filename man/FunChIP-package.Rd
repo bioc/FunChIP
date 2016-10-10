@@ -14,8 +14,8 @@ k-mean alignment algorithm to classify spline-smoothed ChIP-Seq peaks.}
 \tabular{ll}{
 Package: \tab FunChIP \cr
 Type: \tab Package \cr
-Version: \tab 0.99.0 \cr
-Date: \tab 2016-04-18 \cr
+Version: \tab 0.99.4 \cr
+Date: \tab 2016-07-07 \cr
 License: \tab GPL-3\cr
 }
 }

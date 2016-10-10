@@ -3,7 +3,8 @@ setGeneric("smooth_peak", function(object, ...) standardGeneric("smooth_peak") )
 
 smooth.GRange <- function(object, n.breaks=100, subsample=TRUE, subsample.data=100,
                           order = 4, lambda=(10^(seq(-5,5,by=0.5))),
-                          GCV.derivatives = TRUE , plot.GCV = FALSE)
+                          GCV.derivatives = TRUE , plot.GCV = FALSE, 
+                          rescale = FALSE)
 {
 
   # check the first element is a GRange object        
@@ -17,6 +18,11 @@ smooth.GRange <- function(object, n.breaks=100, subsample=TRUE, subsample.data=1
   {
     stop('couts not present in the GR object. Definiton of the spline impossible')
   }
+
+    if (rescale != TRUE & rescale != FALSE)
+    {
+        stop ('rescale must be logic. ')
+    }
  
   length.data <- width(object)
   
@@ -52,7 +58,7 @@ smooth.GRange <- function(object, n.breaks=100, subsample=TRUE, subsample.data=1
   smoothing <- definition_spline(data, length.data+Nend_zeros,
                                  order = order, lambda = lambda_selected,  n.breaks = n.breaks)
 
-  spline_list <- lapply(seq_len(nrow(smoothing$spline)), function(i) smoothing$spline[i,])
+  spline_list <- lapply(seq_len(nrow(smoothing$spline)), function(i) smoothing$spline[i,]) 
   spline_der_list <- lapply(seq_len(nrow(smoothing$spline_der)), function(i) smoothing$spline_der[i,])
   
   thres <- 0.1
@@ -87,6 +93,8 @@ smooth.GRange <- function(object, n.breaks=100, subsample=TRUE, subsample.data=1
     start_spline <- mapply(function(x,y){x - Nstart_zeros + y[1] -1}, start(object), points_non_zero_spline)
     final_spline <- mapply(function(x,y){x - Nstart_zeros + y[length(y)] -1}, start(object), points_non_zero_spline)
   }
+  
+  
   if (length(spline_list)==1)
   {
     spline_list_new <- vector("list",1)
@@ -100,6 +108,11 @@ smooth.GRange <- function(object, n.breaks=100, subsample=TRUE, subsample.data=1
     lung_new <- sapply(points_non_zero_spline, length)
   }
   
+  if (rescale)
+  {
+      new_smoothing <- define_new_grid( list_y = spline_list_new, length_x = lung_new, 
+                       order = order)
+  }
 
   elementMetadata(object)[["spline"]] <- spline_list_new
   elementMetadata(object)[["spline_der"]] <- spline_der_list_new
@@ -107,6 +120,12 @@ smooth.GRange <- function(object, n.breaks=100, subsample=TRUE, subsample.data=1
   elementMetadata(object)[["start_spline"]] <- start_spline
   elementMetadata(object)[["end_spline"]] <- final_spline
   
+  if (rescale)
+  {
+      elementMetadata(object)[["spline_rescaled"]] <- new_smoothing$spline
+      elementMetadata(object)[["spline_der_rescaled"]] <- new_smoothing$spline_der
+      
+  }
   
   return(object)
   
@@ -114,10 +133,10 @@ smooth.GRange <- function(object, n.breaks=100, subsample=TRUE, subsample.data=1
 
 setMethod("smooth_peak", signature=(object="GRanges"), function(object, n.breaks = 100, subsample = TRUE, subsample.data = 100,
                                                                 order = 4, lambda = (10^(seq(-5,5,by=0.5))),
-                                                                GCV.derivatives = TRUE , plot.GCV = FALSE)
+                                                                GCV.derivatives = TRUE , plot.GCV = FALSE, rescale = FALSE)
   smooth.GRange (object, n.breaks, subsample, subsample.data,
                  order, lambda,
-                 GCV.derivatives , plot.GCV)
+                 GCV.derivatives , plot.GCV, rescale)
 )
 
 
@@ -327,4 +346,62 @@ convert_vectors_to_list <- function(vect, positions)
   list <- lapply(list_temp, unlist)
   
   return(list)
+}
+
+
+# function to scale the abscissa grid and y grid
+
+define_new_grid <- function(list_y, length_x,
+                            order = 4)
+{
+    
+    
+    length_final <- min(length_x)
+    
+    list_x <- lapply(length_x, function(x){(1:x)*(length_final-1)/(x-1) + (x- length_final)/(x-1) })
+    
+    NT= length_final
+    
+    num_points_projection <- round(length_final/2)
+    
+    m=order   # order of the  spline
+    
+    degree=m-1  # degree
+    
+   
+    breaks=seq(1,NT,length=num_points_projection) 
+        
+    basis=create.bspline.basis(breaks,norder=m)
+        
+    functionalPar = fdPar(fdobj=basis,Lfdobj=2,lambda=0)
+        
+    list_new_data <- lapply(1:length(list_y), function(x)
+                                {
+                                    mod <- smooth.basis(argvals=list_x[[x]], 
+                                                        list_y[[x]],functionalPar)
+                                    y_new <- t(eval.fd(1:length_final, mod$fd, Lfdobj=0))
+                                    y_new <- y_new/sqrt((sum(y_new[- length_final]^2)))
+                                    return(y_new)
+                                }
+                        )
+        
+     spline_new <- unlist.counts(list_new_data, rep(length_final, length(list_new_data)))
+   #  matplot(t(spline_new[1:10,]), type='l')
+        
+    list_new_derivatives <- lapply(1:length(list_y), function(x)
+        {
+            mod <- smooth.basis(argvals=list_x[[x]], 
+                                list_y[[x]],functionalPar)
+            y_new <- t(eval.fd(1:length_final, mod$fd, Lfdobj=0))
+            area <- sqrt((sum(y_new[- length_final]^2)))
+            y_new_der <- t(eval.fd(1:length_final, mod$fd, Lfdobj=1))/area
+            return(y_new_der)
+        }
+        )
+        
+     spline_der_new <- unlist.counts(list_new_derivatives, rep(length_final, length(list_new_derivatives)))
+        
+  #   matplot(t(spline_der_new[1:10,]), type='l')
+    
+    return(list(spline= list_new_data, spline_der=list_new_derivatives))
 }

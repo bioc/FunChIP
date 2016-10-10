@@ -3,7 +3,8 @@ setGeneric("cluster_peak", function(object, ...) setGeneric("cluster_peak"))
 
 cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
                            n.clust = NULL,  seeds = NULL, shift.peak = NULL, weight = NULL, subsample.weight = 100,
-                           alpha = 1, p = 1, t.max = 0.5,  plot.graph.k = TRUE, verbose = TRUE)
+                           alpha = 1, p = 1, t.max = 0.5,  plot.graph.k = TRUE, verbose = TRUE, 
+                           rescale = FALSE)
 {
   # This function will call the .cpp funciton
   #   SEXP kmean_function (SEXP x, SEXP spline, SEXP spline_der,
@@ -12,6 +13,11 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
   #                        SEXP p_input, SEXP t_max_input, SEXP verbose)
 
 
+    if (rescale & is.null(object$spline_rescaled))
+    {
+        stop('provide the rescaled spline and derivatives')
+    }
+    
   if (is.null(object$counts)) 
   {
         stop('No information on the peaks provided!')
@@ -39,15 +45,44 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
   if (length(object)==1) 
   {
         x_centered_list <- vector('list', 1)
-        x_centered_list[[1]] <- (-object$summit_spline +1) : (object$width_spline - object$summit_spline)
+        if(rescale)
+        {
+            x_centered_list[[1]] <- (-object$summit_spline +1) : (length(object$spline_rescaled[[1]]) - object$summit_spline)
+        }else
+        {
+            x_centered_list[[1]] <- (-object$summit_spline +1) : (object$width_spline - object$summit_spline)
+        }
+        
   }else
   {
-        x_centered_list <- mapply(function(x,y){(-x+1):(y-x)}, object$summit_spline, object$width_spline)
+      if(rescale)
+      {
+          x_centered_list <- mapply(function(x,y){(-x+1):(y-x)}, object$summit_spline_rescaled, 
+                                    rep(length(object$spline_der_rescaled[[1]]), length(object$width_spline)), 
+                                    SIMPLIFY = FALSE)
+      }else
+      {
+          x_centered_list <- mapply(function(x,y){(-x+1):(y-x)}, object$summit_spline, object$width_spline)   
+      }
+        
   }
     
-  x_matrix <- unlist.counts(x_centered_list, object$width_spline)
-  spline_matrix <- unlist.counts(object$spline, object$width_spline)
-  spline_der_matrix <- unlist.counts(object$spline_der, object$width_spline)
+  
+    x_matrix <- unlist.counts(x_centered_list, sapply(x_centered_list, length))
+    
+    
+  if(rescale)
+  {
+     
+      spline_matrix <- unlist.counts(object$spline_rescaled, 
+                                     sapply(object$spline_rescaled, length))
+      spline_der_matrix <- unlist.counts(object$spline_der_rescaled, 
+                                         sapply(object$spline_der_rescaled, length))
+  }else
+  {
+      spline_matrix <- unlist.counts(object$spline, object$width_spline)
+      spline_der_matrix <- unlist.counts(object$spline_der, object$width_spline)
+  }
 
   # check the dimentions of x, spline, spline_der
 
@@ -81,7 +116,7 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
   {
       if ( (is.null(subsample.weight)) || (subsample.weight >= length(object)))
       {
-          dist_matrix <- distance_peak(object, p)
+          dist_matrix <- distance_peak(object, p, rescale)
           upper_triang_d0 <- dist_matrix$dist_matrix_d0[upper.tri(dist_matrix$dist_matrix_d0)]
           upper_triang_d1 <- dist_matrix$dist_matrix_d1[upper.tri(dist_matrix$dist_matrix_d1)]
           weight <- median(upper_triang_d0/upper_triang_d1)
@@ -91,7 +126,7 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
           # data can be computationally expensive
           
           object_here <- object[sort(sample(1:length(object), subsample.weight))]
-          dist_matrix <- distance_peak(object_here, p)
+          dist_matrix <- distance_peak(object_here, p, rescale)
           upper_triang_d0 <- dist_matrix$dist_matrix_d0[upper.tri(dist_matrix$dist_matrix_d0)]
           upper_triang_d1 <- dist_matrix$dist_matrix_d1[upper.tri(dist_matrix$dist_matrix_d1)]
           weight <- median(upper_triang_d0/upper_triang_d1)
@@ -104,7 +139,7 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
   
   if (is.null(seeds))
   {
-      dist_matrix <- distance_peak(object, p)
+      dist_matrix <- distance_peak(object, p, rescale)
       dist_matrix_global <- (1 -alpha) * dist_matrix$dist_matrix_d0 + alpha * weight * dist_matrix$dist_matrix_d1
       dist_elem <- colSums(dist_matrix_global)
       seeds <- t(as.vector(sort(dist_elem, index.return = TRUE, decreasing = FALSE)$ix[1:max(n.clust)]))
@@ -173,6 +208,16 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
   # to define the variable k as global.
   k = NULL
   
+  width_global <- rep(NA,  length(object$width_spline))
+  if(rescale)
+  {
+      width_global <- rep(length(object$spline_rescaled[[1]]), length(object$width_spline))  
+  }else
+  {
+      width_global <- object$width_spline   
+  }
+  
+  
   if (parallel==TRUE)
   {
       
@@ -187,19 +232,21 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
     
   
     
+    
     if (is.null(shift.peak))
     {
+      
       registration_NOalignment <- foreach(k=n.clust) %dopar%
       {
         .Call(kmean_function, x_matrix, spline_matrix , spline_der_matrix,
-              object$width_spline, seeds[1:k]-1, 'F', k, weight, alpha, p, t.max, verb) 
+              width_global, seeds[1:k]-1, 'F', k, weight, alpha, p, t.max, verb) 
           #NB the c++ codification of the position on vectors is from 0
       }
 
       registration_shift <- foreach(k=n.clust) %dopar%
       {
         .Call(kmean_function, x_matrix, spline_matrix , spline_der_matrix,
-              object$width_spline, seeds[1:k]-1, 'T', k, weight, alpha, p, t.max, verb)
+              width_global, seeds[1:k]-1, 'T', k, weight, alpha, p, t.max, verb)
       }
     }else
     {
@@ -210,7 +257,7 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
         registration_shift <- foreach(k=n.clust) %dopar%
         {
           .Call(kmean_function, x_matrix, spline_matrix , spline_der_matrix,
-                object$width_spline, seeds[1:k]-1, 'T', k, weight, alpha, p, t.max, verb)
+                width_global, seeds[1:k]-1, 'T', k, weight, alpha, p, t.max, verb)
         }
       }
       if (!shift.peak)
@@ -218,7 +265,7 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
         registration_NOalignment <- foreach(k=n.clust) %dopar%
         {
           .Call(kmean_function, x_matrix, spline_matrix , spline_der_matrix,
-                object$width_spline, seeds[1:k]-1, 'F', k, weight, alpha, p, t.max, verb)
+                width_global, seeds[1:k]-1, 'F', k, weight, alpha, p, t.max, verb)
         }
 
         registration_shift <- NULL
@@ -234,13 +281,13 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
       registration_NOalignment <- foreach(k=n.clust) %do%
       {
         .Call(kmean_function, x_matrix, spline_matrix , spline_der_matrix,
-              object$width_spline, seeds[1:k]-1, 'F', k, weight, alpha, p, t.max, verb)
+              width_global, seeds[1:k]-1, 'F', k, weight, alpha, p, t.max, verb)
       }
 
       registration_shift <- foreach(k=n.clust) %do%
       {
         .Call(kmean_function, x_matrix, spline_matrix , spline_der_matrix,
-              object$width_spline, seeds[1:k]-1, 'T', k, weight, alpha, p, t.max, verb)
+              width_global, seeds[1:k]-1, 'T', k, weight, alpha, p, t.max, verb)
       }
     }else
     {
@@ -251,7 +298,7 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
         registration_shift <- foreach(k=n.clust) %do%
         {
           .Call(kmean_function, x_matrix, spline_matrix , spline_der_matrix,
-                object$width_spline, seeds[1:k]-1, 'T', k, weight, alpha, p, t.max, verb)
+                width_global, seeds[1:k]-1, 'T', k, weight, alpha, p, t.max, verb)
         }
       }
       if (!shift.peak)
@@ -259,7 +306,7 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
         registration_NOalignment <- foreach(k=n.clust) %do%
         {
           .Call(kmean_function, x_matrix, spline_matrix , spline_der_matrix,
-                object$width_spline, seeds[1:k]-1, 'F', k, weight, alpha, p, t.max, verb)
+                width_global, seeds[1:k]-1, 'F', k, weight, alpha, p, t.max, verb)
         }
 
         registration_shift <- NULL
@@ -288,21 +335,21 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
     }
     if (no_al & shi)
     {
-      plot(n.clust, mean_dist_NOal, col=1, pch=19, type='b', xlab='n.clust', ylab ='average distance', ylim=ylim)
-      points(n.clust, mean_dist_shi, col=2, pch=19, type='b')
-      legend('topright', legend=c('NO alignment', 'shift'), col=c(1,2), pch=19, lty=1)
+      plot(n.clust, mean_dist_NOal, col='grey31', pch=19, type='b', xlab='number of clusters', ylab ='average distance', ylim=ylim, lwd =2, main = 'Average distance varying the number of clusters')
+      points(n.clust, mean_dist_shi, col='red3', pch=19, type='b', lwd =2)
+      legend('topright', legend=c('No Shift', 'Shift'), col=c('grey31','red3'), pch=19, cex = 1.2, lty=1, bty = 'n')
     }
 
     if (no_al & !shi)
     {
-      plot(n.clust, mean_dist_NOal, col=1, pch=19, type='b', xlab='n.clust', ylab ='average distance', ylim=ylim)
-      legend('topright', legend=c('NO alignment'), col=c(1), pch=19, lty=1)
+      plot(n.clust, mean_dist_NOal, col='grey31', pch=19,lwd =2, type='b', xlab='number of clusters', ylab ='average distance', ylim=ylim, main = 'Average distance varying the number of clusters')
+      legend('topright', legend=c('No Shift'), col=c('grey31'), pch=19, lty=1, cex = 1.2, bty = 'n')
     }
 
     if (!no_al & shi)
     {
-      plot(n.clust, mean_dist_shi, col=2, pch=19, type='b', xlab='n.clust', ylab ='average distance', ylim=ylim)
-      legend('topright', legend=c( 'shift'), col=c(2), pch=19, lty=1)
+      plot(n.clust, mean_dist_shi, col='red3', pch=19, type='b', xlab='number of clusters', ylab ='average distance', ylim=ylim, lwd =2, main = 'Average distance varying the number of clusters')
+      legend('topright', legend=c('Shift'), col=c('red3'), pch=19, lty=1, cex =1.2, bty ='n')
     }
 
   }
@@ -345,11 +392,11 @@ setMethod("cluster_peak", signature=(object="GRanges") ,function(object, paralle
                                                                  n.clust = NULL,  seeds = NULL, shift.peak = NULL,
                                                                  weight = NULL, subsample.weight = 100,
                                                                  alpha = 1, p = 1, t.max = 0.5, plot.graph.k = TRUE,
-                                                                 verbose = TRUE)
+                                                                 verbose = TRUE, rescale = FALSE)
                                                         cluster.GRange(object, parallel, num.cores,
                                                                        n.clust,  seeds, shift.peak,
                                                                        weight, subsample.weight, alpha,
-                                                                       p, t.max,  plot.graph.k, verbose ) )
+                                                                       p, t.max,  plot.graph.k, verbose, rescale) )
 
 
 

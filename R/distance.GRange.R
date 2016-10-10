@@ -18,7 +18,7 @@
 # - a list made up of 2 NxN matrices.
 
 
-distance_peak <- function(object, p = 1)
+distance_peak <- function(object, p = 1, rescale = FALSE)
 {
   
   if (class(object) != "GRanges")
@@ -26,11 +26,15 @@ distance_peak <- function(object, p = 1)
       stop('The first object is not a GRanges object.')
   }
     
-        
+    if (rescale & is.null(object$spline_rescaled))
+    {
+        stop('provide the rescaled spline and derivatives')
+    }
+    
   if (is.null(object$spline) || is.null(object$spline_der) || is.null(object$width_spline) )
   {
     stop('spline is not provided. Run spline_peak before computing the distance')
-    object <- smooth_peak(object)
+   # object <- smooth_peak(object)
   }
 
   if (length(object)==1)
@@ -39,16 +43,35 @@ distance_peak <- function(object, p = 1)
       return (list(dist_matrix_d0 = 0, dist_matrix_d1 = 0))
   }else
   {
-        x_centered_list <- mapply(function(x,y){(-x+1):(y-x)}, object$summit_spline, object$width_spline)
+      if(rescale)
+      {
+          x_centered_list <- mapply(function(x,y){(-x+1):(y-x)}, object$summit_spline_rescaled, 
+                                    rep(length(object$spline_der_rescaled[[1]]), length(object$summit_spline_rescaled)), 
+                                    SIMPLIFY = FALSE)
+      }else
+      {
+          x_centered_list <- mapply(function(x,y){(-x+1):(y-x)}, object$summit_spline, object$width_spline)
+      }
+       
   }
     
-  x_matrix <- unlist.counts(x_centered_list, object$width_spline)    
+  x_matrix <- unlist.counts(x_centered_list, sapply(x_centered_list, length))    
 
-  spline_matrix <- unlist.counts(object$spline, object$width_spline)
-  spline_der_matrix <- unlist.counts(object$spline_der, object$width_spline)
-
+  if (rescale)
+  {
+      spline_matrix <- unlist.counts(object$spline_rescaled, 
+                                     rep(length(object$spline_rescaled[[1]]), length(object$width_spline)))
+      spline_der_matrix <- unlist.counts(object$spline_der_rescaled, 
+                                         rep(length(object$spline_der_rescaled[[1]]), length(object$width_spline)))
+  }else
+  {
+      spline_matrix <- unlist.counts(object$spline, object$width_spline)
+      spline_der_matrix <- unlist.counts(object$spline_der, object$width_spline)
+  }
   # check the dimentions of x, spline, spline_der
 
+  print(dim(x_matrix))
+  print(dim(spline_matrix))
   n.data <- dim(x_matrix)[1]
   n.points <- dim(x_matrix)[2]
 
@@ -68,7 +91,16 @@ distance_peak <- function(object, p = 1)
   }
 
 
-  distances <- .Call("distance_matrix", x_matrix, spline_matrix, spline_der_matrix, object$width_spline, p)
+  if (rescale)
+  {
+      distances <- .Call("distance_matrix", x_matrix, spline_matrix, spline_der_matrix, 
+                         rep(min(object$width_spline), length(object$width_spline)), p)
+  }else
+  {
+      distances <- .Call("distance_matrix", x_matrix, spline_matrix, spline_der_matrix, 
+                         object$width_spline, p)     
+  }
+ 
 
   dist_matrix_d0 <- matrix(unlist(distances$dist_D0), n.data, n.data)
   dist_matrix_d1 <- matrix(unlist(distances$dist_D1), n.data, n.data)

@@ -15,7 +15,7 @@ The first derivative of the spline is also computed.  To obtain a smooth represe
 \S4method{smooth_peak}{GRanges}(object, n.breaks = 100, subsample = TRUE, 
     subsample.data = 100, order = 4,  
     lambda = (10^(seq(-5,5, by = 0.5))),
-    GCV.derivatives = TRUE , plot.GCV = FALSE)
+    GCV.derivatives = TRUE , plot.GCV = FALSE, rescale = FALSE)
 }
 \arguments{
   \item{object}{ \linkS4class{GRanges} object. It must contain the metadata column \code{counts}.
@@ -57,6 +57,12 @@ The first derivative of the spline is also computed.  To obtain a smooth represe
 
   \item{plot.GCV}{logical. If \code{TRUE}, the plot of the GCV of the data and derivatives
   is shown as a function of \eqn{\lambda}. Default value is \code{FALSE}.}
+  
+  \item{rescale}{logical. If \code{TRUE}  \emph{scaled peaks} are also provided. 
+  From the spline approximation of the peak a new curve is defined. It is obtained
+  scaling both the abscissa grid and the values of the coverages of the splines.
+  All the \emph{scaled peaks} have a common grid of width equal to the 
+  minimum width of the origninal splines and area equal to 1. Default is \code{FALSE}.}
 }
 \details{
 
@@ -114,6 +120,13 @@ spline approximation.}
 \item{\code{end_spline} integer. Genomic coordinate of the final point of the
 spline approximation.}
 }
+If  \code{rescale} is \code{TRUE} two more metadata columns are added:
+\itemize{
+\item{\code{spline_rescaled} vector. Evaluation of the \emph{scaled peaks} functions on 
+a grid of width equal to the minimum of \code{width_spline}.}
+\item{\code{spline_der_rescaled} vector. Evaluation of the derivatives of the 
+\emph{scaled peaks} on a grid of width equal to the minimum of \code{width_spline}.}
+}
 }
 
 \references{
@@ -137,5 +150,8 @@ data(peaks)
 
 peaks.spline <- smooth_peak(peaks.data, lambda = 10^(-4:6), 
                             subsample.data = 50, GCV.derivatives = TRUE )
+
+peaks.spline.scaled <- smooth_peak(peaks.data, lambda = 10^(-4:6), 
+                            subsample.data = 50, GCV.derivatives = TRUE, rescale = TRUE )
 
 }

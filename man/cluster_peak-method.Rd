@@ -18,7 +18,7 @@ can be one of \eqn{1}, \eqn{2} and \eqn{\infty}.
 \S4method{cluster_peak}{GRanges}(object, parallel = FALSE, num.cores = NULL,
     n.clust = NULL,  seeds = NULL, shift.peak = NULL, weight = NULL,
     subsample.weight = 100, alpha = 1, p = 1, t.max = 0.5,
-    plot.graph.k = TRUE, verbose = TRUE )
+    plot.graph.k = TRUE, verbose = TRUE, rescale = FALSE )
 }
 \arguments{
   \item{object}{ \linkS4class{GRanges} object of length \eqn{N}. It must contain the metadata columns
@@ -105,6 +105,10 @@ can be one of \eqn{1}, \eqn{2} and \eqn{\infty}.
   information is provided. Default is \code{TRUE}, but consider to set 
   the parameter to \code{FALSE} in case of  parallel runs, to avoid the overlap of their outputs.
   }
+  
+   \item{rescale}{logical. If \code{TRUE} clustering is performed on \emph{scaled peaks}. For the 
+  definition of \emph{scaled peaks} see \link[=smooth_peak-method]{smooth_peak}.}
+
 }
 
 \details{

@@ -9,7 +9,7 @@ Finding the summits of the peaks of the \linkS4class{GRanges} object}
 It identifies the summit of the peak and stores it in a new metadata column.
 }
 \usage{
-\S4method{summit_peak}{GRanges}(object, summit = NULL)
+\S4method{summit_peak}{GRanges}(object, summit = NULL, rescale = FALSE)
 }
 \arguments{
   \item{object}{\linkS4class{GRanges} object  of length \eqn{N}. If \code{summit} is not provided, 
@@ -20,9 +20,13 @@ It identifies the summit of the peak and stores it in a new metadata column.
   from \code{start_spline}). 
   If \code{summit} is \code{NULL} the
   summit of each peak is identified as the maximum point of the \code{spline}.}
+  
+   \item{rescale}{logical. If \code{TRUE} the distance among \emph{scaled peaks} is computed. For the 
+  definition of \emph{scaled peaks} see \link[=smooth_peak-method]{smooth_peak}.}
+
 }
 \value{
-the \linkS4class{GRanges} object with the new metadata column \code{summit_spline}. 
+the \linkS4class{GRanges} object with the new metadata column \code{summit_spline}. In case of \code{rescale = TRUE} an extra metadata column \code{summit_spline_rescaled} is added, containing the summit of the \emph{scaled peak}.
 }
 \author{
 Alice Parodi, Marco J. Morelli, Laura M. Sangalli, Piercesare Secchi, Simone Vantini

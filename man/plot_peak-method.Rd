@@ -15,7 +15,8 @@ divided in cluster, shown in different panels.
 \usage{
 \S4method{plot_peak}{GRanges}(object, index = 1:length(object),
 line.plot = "spline", col = NULL, 
-shift = NULL, k = NULL, cluster.peak = FALSE )
+shift = NULL, k = NULL, cluster.peak = FALSE, rescale = FALSE, 
+lwd= 2, cex.axis = 1,  cex.lab = 1, cex.main = 1)
 }
 
 \arguments{
@@ -66,6 +67,12 @@ shift = NULL, k = NULL, cluster.peak = FALSE )
   in this case, \code{object} must be 
   the output of the \link[=cluster_peak-method]{cluster_peak} 
   and must contain the correspondent classification. Default is \code{FALSE}.} 
+  
+  \item{rescale}{logical. If \code{TRUE} the \emph{scaled peaks} are plotted. Default is
+  \code{FALSE}. If \code{rescale = TRUE} only spline approximations can be shown, then
+  \code{line.plot} must be \code{'spline'}.}
+  
+  \item{lwd, cex.axis, cex.lab, cex.main}{Optional graphical parameters.}
 }
 \value{Graphical method to graphically represent data. No output returned,}
 \author{

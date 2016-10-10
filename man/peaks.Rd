@@ -4,7 +4,11 @@
 \alias{peaks.data.classified}
 \alias{peaks.data.cluster}
 \alias{peaks.data.smooth}
+\alias{peaks.data.smooth.scaled}
 \alias{peaks.data.summit}
+\alias{peaks.data.summit.scaled}
+\alias{peaks.data.cluster.scaled}
+\alias{peaks.data.classified.scaled}
 \docType{data}
 \title{
 Coverage of a ChIP-Seq experiment
@@ -48,6 +52,15 @@ Several data-set are included
         computed with the \link[=smooth_peak-method]{smooth_peak} method. }
      }
     }
+    \item{peaks.data.smooth.scaled: a \linkS4class{GRanges} object with 10 ranges and, beside the 6 metadata
+     columns of \code{peaks.data.smooth}, 2 more coumns 
+     \itemize{
+        \item{\code{spline_rescaled}. A vector for each range, containing the evaluation of the 
+        scaled spline approximation on the common grid of all the peaks.}
+        \item{\code{spline_der_rescaled}. A vector for each range, containing the evaluation of the derivatives 
+        of the  scaled spline approximation on the common grid.}
+     }
+    }
     \item{peaks.data.summit:  a \linkS4class{GRanges} object with 10 ranges and 7 metadata
      columns: 
      \itemize{
@@ -61,6 +74,17 @@ Several data-set are included
         of the maximum point (integer) of
         the spline (or the summit of the peak), for each range. It can be computed with the 
         \link[=summit_peak-method]{summit_peak} method}
+     }
+    }
+    \item{peaks.data.summit.scaled: a \linkS4class{GRanges} object with 10 ranges and, beside the 7 metadata
+     columns of \code{peaks.data.summit}, 3 more coumns 
+     \itemize{
+        \item{\code{spline_rescaled}. As \code{peaks.data.smooth.scaled}.}
+        \item{\code{spline_der_rescaled}. As \code{peaks.data.smooth.scaled}.}
+        \item{\code{summit_spline_rescaled}. The distance from the starting point of the scaled spline
+        of the maximum point (integer) of
+        the scaled spline (or the summit of the peak), for each range. It can be computed with the 
+        \link[=summit_peak-method]{summit_peak} method setting to \code{TRUE} the \code{rescale} argument.}
      }
     }
      \item{peaks.data.cluster:  a \linkS4class{GRanges} object with 10 ranges and 12 metadata
@@ -77,35 +101,45 @@ Several data-set are included
         containing the label of the cluster assigned to the peak in case of clustering without alignment. 
         For example, the second element of the vector is the label of the corresponding peak 
         when the k-mean alignment algorithm is run with 2 clusters.  
-        It can be computed with the \link[=cluster_peak-method]{cluster_peak} with \code{n.clust = 1:5}
+        It can be computed with the \link[=cluster_peak-method]{cluster_peak} method with \code{n.clust = 1:5}
         and \code{shift.peak=FALSE}.}
         \item{\code{dist_NOshift}. A vector of length 5 for each range,
         containing the distance from the center of the cluster assigned to the peak in case of  
         clustering without alignment. For example, the second element of the vector 
         is the distance of the corresponding peak from center of the corresponding cluster when the k-mean 
         alignment algorithm is run with 2 clusters. 
-        It can be computed with the \link[=cluster_peak-method]{cluster_peak} with \code{n.clust = 1:5}
+        It can be computed with the \link[=cluster_peak-method]{cluster_peak} method with \code{n.clust = 1:5}
         and \code{shift.peak=FALSE}.}
         \item{\code{cluster_shift}. A vector of length 5 for each range,
         containing the label of the cluster assigned to the peak in case of clustering with alignment. 
         For example, the second element of the vector is the label of the corresponding peak 
         when the k-mean alignment algorithm is run with 2 clusters. 
-        It can be computed with the \link[=cluster_peak-method]{cluster_peak} with \code{n.clust = 1:5}
+        It can be computed with the \link[=cluster_peak-method]{cluster_peak} method with \code{n.clust = 1:5}
         and \code{shift.peak=TRUE}.}
         \item{\code{coef_shift}. A vector of length 5 for each range,
         containing the optimal shift coefficient of the peak. 
         For example, the second element of the vector is the shift coefficient of the corresponding
         peak when the k-mean alignment algorithm is run with 2 clusters. 
-        It can be computed with the \link[=cluster_peak-method]{cluster_peak} with \code{n.clust = 1:5}
+        It can be computed with the \link[=cluster_peak-method]{cluster_peak} method with \code{n.clust = 1:5}
         and \code{shift.peak=TRUE}.}
         \item{\code{dist_shift}. A vector of length 5 for each range,
         containing the distance from the center of the cluster assigned to the peak in case of 
         clustering with alignment. For example, the second element of the vector 
         is the distance of the corresponding peak from the center of the corresponding cluster when the k-mean 
         alignment algorithm is run with 2 clusters. 
-        It can be computed with the \link[=cluster_peak-method]{cluster_peak} with \code{n.clust = 1:5}
+        It can be computed with the \link[=cluster_peak-method]{cluster_peak} method with \code{n.clust = 1:5}
         and \code{shift.peak=TRUE}.}
      }
+    }
+    \item{peaks.data.cluster.scaled: a \linkS4class{GRanges} object with 10 ranges and, beside the 12 metadata
+     columns of \code{peaks.data.cluster}, 3 more coumns 
+     \itemize{
+        \item{\code{spline_rescaled}. As \code{peaks.data.smooth.scaled}.}
+        \item{\code{spline_der_rescaled}. As \code{peaks.data.smooth.scaled}.}
+        \item{\code{summit_spline_rescaled}. As \code{peaks.data.summit.scaled}.}
+     }
+     It is computed from \code{peaks.data.summit.scaled} with the 
+     \link[=cluster_peak-method]{cluster_peak} method setting \code{rescale = TRUE}.
     }
     \item{peaks.data.classified:  a \linkS4class{GRanges} object with 10 ranges and 13 metadata
      columns:
@@ -126,6 +160,16 @@ Several data-set are included
         It can be computed with the \link[=choose_k-method]{choose_k} 
         with \code{k = 3} and \code{shift.peak = TRUE}.}
      }
+    }
+    \item{peaks.data.classified.scaled: a \linkS4class{GRanges} object with 10 ranges and, beside the 13 metadata
+     columns of \code{peaks.data.classified}, 3 more coumns 
+     \itemize{
+        \item{\code{spline_rescaled}. As \code{peaks.data.smooth.scaled}.}
+        \item{\code{spline_der_rescaled}. As \code{peaks.data.smooth.scaled}.}
+        \item{\code{summit_spline_rescaled}. As \code{peaks.data.summit.scaled}.}
+     }
+     It is computed from \code{peaks.data.cluster.scaled} with the 
+     \link[=choose_k-method]{choose_k} method setting \code{rescale = TRUE}.
     }
     
 
