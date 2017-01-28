@@ -25,7 +25,7 @@ distance_peak <- function(object, p = 1, rescale = FALSE)
   {
       stop('The first object is not a GRanges object.')
   }
-    
+  
     if (rescale & is.null(object$spline_rescaled))
     {
         stop('provide the rescaled spline and derivatives')
@@ -37,6 +37,7 @@ distance_peak <- function(object, p = 1, rescale = FALSE)
    # object <- smooth_peak(object)
   }
 
+  
   if (length(object)==1)
   {
         warning('only one peak provided. Distance from itself is 0')
@@ -45,12 +46,27 @@ distance_peak <- function(object, p = 1, rescale = FALSE)
   {
       if(rescale)
       {
-          x_centered_list <- mapply(function(x,y){(-x+1):(y-x)}, object$summit_spline_rescaled, 
-                                    rep(length(object$spline_der_rescaled[[1]]), length(object$summit_spline_rescaled)), 
-                                    SIMPLIFY = FALSE)
+          if(is.null(object$summit_spline_rescaled))
+          {
+              warning("summit not provided. Distances are computed on the original grid.")
+              x_centered_list <- sapply(object$spline_der_rescaled, function(x){return(1:length(x))})
+          }else{
+              x_centered_list <- mapply(function(x,y){(-x+1):(y-x)}, object$summit_spline_rescaled, 
+                                        rep(length(object$spline_der_rescaled[[1]]), length(object$summit_spline_rescaled)), 
+                                        SIMPLIFY = FALSE)
+          }
+          
       }else
       {
-          x_centered_list <- mapply(function(x,y){(-x+1):(y-x)}, object$summit_spline, object$width_spline)
+          if(is.null(object$summit_spline))
+          {
+              warning("summit not provided. Distances are computed on the original grid.")
+              x_centered_list <- sapply(object$spline_der, function(x){return(1:length(x))})
+          }else
+          {
+            x_centered_list <- mapply(function(x,y){(-x+1):(y-x)}, object$summit_spline, object$width_spline)
+          }
+          
       }
        
   }
@@ -70,8 +86,8 @@ distance_peak <- function(object, p = 1, rescale = FALSE)
   }
   # check the dimentions of x, spline, spline_der
 
-  print(dim(x_matrix))
-  print(dim(spline_matrix))
+  #print(dim(x_matrix))
+  #print(dim(spline_matrix))
   n.data <- dim(x_matrix)[1]
   n.points <- dim(x_matrix)[2]
 

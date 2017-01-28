@@ -6,6 +6,7 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
                            alpha = 1, p = 1, t.max = 0.5,  plot.graph.k = TRUE, verbose = TRUE, 
                            rescale = FALSE)
 {
+    
   # This function will call the .cpp funciton
   #   SEXP kmean_function (SEXP x, SEXP spline, SEXP spline_der,
   #                        SEXP lenght, SEXP seeds, SEXP align,
@@ -218,6 +219,10 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
   }
   
   
+  registration_NOalignment <- NULL
+  registration_shift <- NULL
+  
+  
   if (parallel==TRUE)
   {
       
@@ -231,7 +236,6 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
     registerDoParallel(cl)
     
   
-    
     
     if (is.null(shift.peak))
     {
@@ -252,7 +256,7 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
     {
       if (shift.peak)
       {
-        registration_NOalignment <- NULL
+       # registration_NOalignment <- NULL
 
         registration_shift <- foreach(k=n.clust) %dopar%
         {
@@ -268,7 +272,7 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
                 width_global, seeds[1:k]-1, 'F', k, weight, alpha, p, t.max, verb)
         }
 
-        registration_shift <- NULL
+       #        registration_shift <- NULL 
       }
     }
 
@@ -293,8 +297,9 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
     {
       if (shift.peak)
       {
-        registration_NOalignment <- NULL
-
+        
+         # registration_NOalignment <- NULL
+         
         registration_shift <- foreach(k=n.clust) %do%
         {
           .Call(kmean_function, x_matrix, spline_matrix , spline_der_matrix,
@@ -309,7 +314,7 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
                 width_global, seeds[1:k]-1, 'F', k, weight, alpha, p, t.max, verb)
         }
 
-        registration_shift <- NULL
+#        registration_shift <- NULL
       }
     }
 
@@ -335,9 +340,23 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
     }
     if (no_al & shi)
     {
-      plot(n.clust, mean_dist_NOal, col='grey31', pch=19, type='b', xlab='number of clusters', ylab ='average distance', ylim=ylim, lwd =2, main = 'Average distance varying the number of clusters')
-      points(n.clust, mean_dist_shi, col='red3', pch=19, type='b', lwd =2)
-      legend('topright', legend=c('No Shift', 'Shift'), col=c('grey31','red3'), pch=19, cex = 1.2, lty=1, bty = 'n')
+#       plot(n.clust, mean_dist_NOal, col='grey31', pch=19, type='b', xlab='number of clusters', ylab ='average distance', ylim=ylim, lwd =2, main = 'Average distance varying the number of clusters')
+#       points(n.clust, mean_dist_shi, col='red3', pch=19, type='b', lwd =2)
+#       legend('topright', legend=c('No Shift', 'Shift'), col=c('grey31','red3'), pch=19, cex = 1.2, lty=1, bty = 'n')
+#       
+
+        par(mar = c(4,5,4,4))
+        plot(n.clust, mean_dist_NOal, col='grey31', 
+             pch=19, type='b', xlab='number of clusters', 
+             ylab ='average distance', ylim=ylim, lwd =2, cex = 2,
+             main = 'Average distance varying k', 
+             font.main = 1, cex.main = 2, cex.lab = 2, cex.axis = 1.5)
+        points(n.clust, mean_dist_shi, 
+               col='red3', pch=19, type='b', lwd =2, cex = 2)
+        legend('topright', legend=c('No Shift', 'Shift'), 
+               col=c('grey31','red3'), pch=19, 
+               cex = 1.7, lty=1, bty = 'n')
+       
     }
 
     if (no_al & !shi)
@@ -355,7 +374,7 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
   }
 
   # save the results
-  if (!is.null(registration_NOalignment))
+  if (length(registration_NOalignment)!=0)
   {
     label <- lapply(registration_NOalignment, function(x){x$labels+1})
     labels_NOalignment <- convert_vectors_to_list(label, n.clust)
@@ -368,7 +387,7 @@ cluster.GRange <- function(object, parallel = FALSE, num.cores = NULL,
 
   }
 
-  if (!is.null(registration_shift))
+  if (length(registration_shift)!=0)
   {
     label <- lapply(registration_shift, function(x){x$labels+1})
     labels_shift <- convert_vectors_to_list(label, n.clust)

@@ -220,6 +220,20 @@ choice_lambda_spline <- function(data, length.data, Nstart_zeros,
     
     # plot of the GCV on the data
     plot(log10(lambda), GCV_d1, pch=19, type='b')
+# #     
+#     pdf('FunChIP-figureGCV.pdf', width = 14 )
+#     par(mfrow=c(1,2), mar = c(4.5,5,4,4))
+#     # plot of the GCV on the data
+#     plot(log10(lambda), GCV_d0, pch=19, type='b', cex = 2, 
+#          lwd = 2, cex.lab = 2, cex.axis = 1.5, 
+#          main = "GCV on data", font.main = 1, cex.main = 2)
+#     
+#     # plot of the GCV on the data
+#     plot(log10(lambda), GCV_d1, pch=19, type='b', 
+#          cex = 2, 
+#          lwd = 2, cex.lab = 2, cex.axis = 1.5, 
+#          main = "GCV on derivatives", font.main = 1, cex.main = 2)
+#     dev.off()
   }
   if (GCV.derivatives){
     

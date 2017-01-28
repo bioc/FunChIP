@@ -309,7 +309,7 @@ are described in Section \ref{sect:cluster} and Section \ref{sect:plot}.
 # representation of two peaks
 
 par (mfrow = c(1,2))
-plot_peak(peaks.summit, index = c(6,7), col=c('red',2))
+plot_peak(peaks.summit, index = c(6,7), col=c('red',2), cex.main = 2, cex.lab = 2, cex.axis = 1.5, lwd = 2)
 aligned.peaks <- cluster_peak(peaks.summit[c(6,7)], parallel = FALSE ,
                                     n.clust = 1, seeds = 1, shift.peak = TRUE,
                                     weight = 1, alpha = 1, p = 2, t.max = 2,
@@ -320,7 +320,8 @@ aligned.peaks
 aligned.peaks$coef_shift
 plot_peak(aligned.peaks, col = 'forestgreen',
           shift = TRUE, k = 1, cluster.peak = TRUE,
-          line.plot = 'spline')
+          line.plot = 'spline', 
+          cex.main = 2,  cex.lab = 2, cex.axis = 1.5, lwd = 2)
 @
 
 
@@ -529,6 +530,7 @@ obtained with $k=3$ and alignment is very similar to the one obtained with $k=4$
  \end{itemize}
 
 Therefore, for this case, one possible classification is the one associated to $k=3$ with shift. On the contray for the scaled peaks the value of $k$ we can identify as crucial is $k=2$ and shift is relevant since it reduces a lot the global distance. 
+In Section \ref{sect:silhouette}  we present two quantitative methods to isolate the most suitable value of $k$: the first quantifies the elbow rule we have presented here and the second that computes the Silhouette index to consider the global structure of the dataset. 
 The results for this specific number of clusters can then be selected with the \Rfunction{choose\_k}
 method:
 
@@ -559,19 +561,87 @@ The \Rfunction{choose\_k} method allows, respectively, to remove all the metadat
 retaining all the details of the prepossessing and clustering (all the previously described
 metadata columns), with the extra column \Rcode{cluster} (\Rcode{cleaning = FALSE}).
 
+\subsection{The choice of the final classification with the ratio index and the Silhouette plot} \label{sect:silhouette}
+
+In this section we present two analyses which could be useful to identify the most suitable value of the number of clusters. 
+
+The first analysis quantifies the elbow rule we  proposed in the previous section. The function \Rfunction{bending\_index} computes for each value of $k$ in the range $[2 : K-1]$, with $K$ the maximum  number of clusters allowed in  \Rfunction{cluster\_peak}, an index that quantifies the bending of the curve. The higher  this index,  the more appropriate is the correspondent value of $k$. The index is computed as the distance of the point $P$ in $k$ of the global distance function, normalized to its  maximum value, ( $ P = (k, \tilde{D}(k))$) from the line $r$ passing by the point in $k-1$ and in $k+1$ ($ r = r((k-1, \tilde{D}(k-1)), (k+1, \tilde{D}(k+1))$). The normalized distance function is 
+$$
+\tilde{D}(k) = \frac{D(k)}{\max_{k = 1: K}{D(k)}}
+$$
+with $D(k)$ being the global distance of the set of classified peaks, when divided into $k$ clusters:
+$$
+D(k) = \sum_{i = 1}^n d_{i,k}^{\star}.
+$$
+In particular, $d_{i,k}^{\star}$ is the distance of 
+each peak $i$ from the center of the correspondent cluster $c_{k^{\star}_i}$.
+Then, the index can be written as:
+$$
+r(k) = \textrm{dist}((k, \tilde{D}(k)), r((k-1, \tilde{D}(k-1)), (k+1, \tilde{D}(k+1))))
+$$
+
+<<ratio>>=
+# here we compute the bending index for the classification
+# provided for the non scaled dataset
+
+index <- bending_index(peaks.cluster, plot.graph.k = FALSE)
+index
+
+# and then for the scaled dataset
+index_scaled <- bending_index(peaks.cluster.scaled, plot.graph.k = FALSE)
+index_scaled
+
+@
+
+The function returns the value of the ratio index varying $k$ for
+both the classification with \Rcode{index\_shift} and without \Rcode{index\_NOshift} alignment, if both   
+classifications are stored in the \Rcode{object}. It can also show the plot of the global distance curves of Figure \ref{graphK}, if \Rcode{plot.graph.k = TRUE}.
+
+Moreover, we present another method to evaluate the choice the proper number of clusters, which takes into account the global set of data. This method is based on the defintion of the Silhouette index of \cite{Rousseeuw:1987} and,  for the peak $i$, the index is computed as
+$$
+s(i) = \frac{a(i)-b(i)}{\max(a(i), b(i))},
+$$
+with $a(i)$ being the average dissimilarity of peak $i$ with all other data within the same cluster and $b(i)$ the lowest average dissimilarity of  $i$ to any other cluster, of which $i$ is not a member. To compute the $b(i)$ value it is necessary to compare peaks belonging to different clusters. In case of classification with alignment, to define the distance of peaks of different clusters it is necessary first to align the two clusters. To perform this global alignment in an efficient way, we  align the centers of the clusters and then use the  estimated shift coefficient  to align  all the peaks of the two clusters. 
+
+<<sil, fig=TRUE, include=FALSE, width=15, height=8>>=
+sil <- silhouette_plot(peaks.cluster, p=2, weight = 1, alpha = 1,
+                         rescale = FALSE, t.max = 2)
+@
+
+<<sil_scaled, fig=TRUE, include=FALSE, width=15, height=8>>=
+sil <- silhouette_plot(peaks.cluster.scaled, p=2, weight = 1, alpha = 1,
+                         rescale = FALSE, t.max = 2)
+@
+
+
+\begin{figure} \label{shilouette}
+\centering
+\includegraphics [width = 0.99\textwidth]{FunChIP-sil}
+\caption{\textbf{Silhouette graph for the classification of  unscaled peaks.} In the top panel, Silhouette plots for the classification without alignment, as function of the number of clusters; in the bottom panel, Silhouette plots for the classification with alignment.}
+\end{figure}
+
+\begin{figure} \label{shilouette}
+\centering
+\includegraphics [width = 0.99\textwidth]{FunChIP-sil_scaled}
+\caption{\textbf{Silhouette graph for the classification of  scaled peaks.} In the top panel, Silhouette plots for the classification without alignment, as a function of the number of clusters; in the bottom panel, Silhouette plots for the classification with alignment.}
+\end{figure}
+
+Th plots shown in Figure \ref{shilouette} represent the Silhouette index for all the peaks divided in the clusters, together with the global average Silhouette index. The average Silhouette index is maximum when the clustering is separating the data in the most suited manner and then this index has to be maximized to choose the best classification. In the case here presented here, the best classification according to this criteria is the classification with alignment and $k =2$ or $k=3$. Considering both Silhouette and the  ratio criteria, in the next section we present the results of the classification with alignement and $k=3$ clusters.
+
 \section{Visualization of the peaks} \label{sect:plot}
 The  \Rfunction{plot\_peak} method is a very flexible function
 for displaying ChIP-Seq peaks. In particular, it allows to
 plot the raw counts obtained by the \Rfunction{pileup\_peak} method, as
 in Figure \ref{FunChIP-plot1}. It can also plot
 smoothed peaks, possibly centered around the summit, as in
-Figure \ref{two_plots}, or scaled as in Figure \ref{scaled} and centerd.
+Figure \ref{twoplots}, or scaled as in Figure \ref{scaled} and centerd.
 
 <<plot1, fig=TRUE, include=FALSE, width=8, height=8>>=
 
 # plot of the first 10 peaks (raw data)
-plot_peak(peaks, index = 1:10, line.plot = 'count')
-
+par(mar=c(4.5,5,4,4))
+plot_peak(peaks, index = 1:10, line.plot = 'count',
+          cex.main = 2, cex.lab = 2, cex.axis =2)
 @
 \incfig{FunChIP-plot1}{0.5\textwidth}{10 peaks: counts.}
      {Representation of the original peaks as raw counts  (no smoothing).}
@@ -580,7 +650,8 @@ plot_peak(peaks, index = 1:10, line.plot = 'count')
 <<plot2, fig=TRUE, include=FALSE, width=8, height=8>>=
 
 # plot of the smoothed approximation of the first 10 peaks
-plot_peak(peaks.smooth, index = 1:10, line.plot = 'spline')
+par(mar=c(4.5,5,4,4))
+plot_peak(peaks.smooth, index = 1:10, line.plot = 'spline',  cex.main = 2,cex.lab = 2, cex.axis =2)
 
 @
 % \incfig{FunChIP-plot2}{0.5\textwidth}{10 peaks: splines.}
@@ -591,16 +662,19 @@ plot_peak(peaks.smooth, index = 1:10, line.plot = 'spline')
 
 # plot of the smoothed approximation of the first 10 peaks,
 # centering peaks around their summits
-plot_peak(peaks.summit, index = 1:10, line.plot = 'spline')
-
+par(mar=c(4.5,5,4,4))
+plot_peak(peaks.summit, index = 1:10, line.plot = 'spline', cex.main = 2,cex.lab = 2, cex.axis =2)
 @
 
 <<plot2bis, fig=TRUE, include=FALSE, width=8, height=8>>=
 
 # plot of the smoothed approximation of the first 10 peaks;
 # the scaled functions are plotted.
+# 
+par(mar=c(4.5,5,4,4))
 plot_peak(peaks.smooth.scaled, index = 1:10, 
-          line.plot = 'spline', rescale = TRUE)
+          line.plot = 'spline', rescale = TRUE, 
+           cex.main = 2,cex.lab = 2, cex.axis =2)
 
 @
 
@@ -608,12 +682,13 @@ plot_peak(peaks.smooth.scaled, index = 1:10,
 
 # plot of the scaled approximation of the first 10 peaks,
 # centering peaks around their summits
+par(mar=c(4.5,5,4,4))
 plot_peak(peaks.summit.scaled, index = 1:10, 
-          line.plot = 'spline', rescale = TRUE)
-
+          line.plot = 'spline', rescale = TRUE, 
+           cex.main = 2,cex.lab = 2, lwd = 2,cex.axis =2)
 @
 
-\begin{figure} \label{two_plots}
+\begin{figure} \label{twoplots}
 \centering
 \includegraphics [width = 0.4\textwidth]{FunChIP-plot2}
 \includegraphics [width = 0.4\textwidth]{FunChIP-plot3}
@@ -622,7 +697,7 @@ peaks are shown, while in the right panel the same peaks are
 centered around their summits.}
 \end{figure}
 
-\begin{figure} \label{two_plots_bis}
+\begin{figure} \label{twoplotsbis}
 \centering
 \includegraphics [width = 0.4\textwidth]{FunChIP-plot2bis}
 \includegraphics [width = 0.4\textwidth]{FunChIP-plot3bis}
@@ -631,7 +706,7 @@ peaks are shown, while in the right panel the same peaks are
 centered around their summits.}
 \end{figure}
 
-From the comparison of Figure \ref{two_plots} and Figure \ref{two_plots_bis}
+From the comparison of Figure \ref{twoplots} and Figure \ref{twoplotsbis}
 it is clear how the scaling affects the shape of splines. Now peaks are no more 
 related to the magnitude, but just to their shapes.
 
@@ -646,27 +721,27 @@ parameter of the spline approximation.
 
 # plot of a peak comparing its raw structure and
 # its spline-smoothed version.
-plot_peak(peaks.summit, index = 3, line.plot = 'both', col = 'darkblue')
-
+par(mar=c(4.5,5,4,4))
+plot_peak(peaks.summit, index = 3, lwd =2, line.plot = 'both', col = 'darkblue', cex.main = 2,cex.lab = 2, cex.axis =2)
 @
 
 \incfig{FunChIP-plotBOTH}{0.4\textwidth}{Read coverage and spline approximation.}
      {Plot of the original read coverage of a peak and its smoothing (spline approximation), centered
      around the summit.}
      
-\incfig{FunChIP-plot4}{0.95\textwidth}{Peaks divided in the three clusters}
+\incfig{FunChIP-plot4}{0.99\textwidth}{Peaks divided in the three clusters}
      {The same spline-smoothed peaks are plotted in
      grey, and for each panel the peaks in the corresponding cluster are colored to show their different shapes.
      Peaks are aligned with the shift coefficients obtained by the k-mean
      alignment algorithm.}
      
-\incfig{FunChIP-plot4bis}{0.8\textwidth}{Scaled peaks divided in the three clusters}
+\incfig{FunChIP-plot4bis}{0.8\textwidth}{Scaled peaks divided in the two clusters}
      {The same spline-smoothed scaled peaks are plotted in
      grey, and for each panel the peaks in the corresponding cluster are colored to show their different shapes.
      Peaks are aligned with the shift coefficients obtained by the k-mean
      alignment algorithm.}
 
-<<plot4, fig=TRUE, include=FALSE, width=18, height=6>>=
+<<plot4, fig=TRUE, include=FALSE, width=13, height=5.5>>=
 
 # plot of the results of the kmean alignment.
 # Peaks are plotted in three different panels
@@ -674,11 +749,10 @@ plot_peak(peaks.summit, index = 3, line.plot = 'both', col = 'darkblue')
 
 plot_peak(peaks.cluster, index = 1:100, line.plot = 'spline',
           shift = TRUE, k = 3, cluster.peak = TRUE, 
-          col = topo.colors(3))
-
+          col = topo.colors(3),  cex.main = 2,cex.lab = 2, cex.axis =2)
 @
 
-<<plot4bis, fig=TRUE, include=FALSE, width=10, height=5.8>>=
+<<plot4bis, fig=TRUE, include=FALSE, width=12, height=5.8>>=
 
 # plot of the results of the kmean alignment.
 # Scaled peaks are plotted in three different panels
@@ -686,7 +760,7 @@ plot_peak(peaks.cluster, index = 1:100, line.plot = 'spline',
 
 plot_peak(peaks.cluster.scaled, index = 1:100, line.plot = 'spline',
           shift = TRUE, k = 2, cluster.peak = TRUE, rescale = TRUE, 
-          col = heat.colors(2))
+          col = heat.colors(2), cex.main = 2,cex.lab = 2, cex.axis =2)
 
 @
 

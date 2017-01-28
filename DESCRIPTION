@@ -1,12 +1,12 @@
 Package: FunChIP
 Type: Package
 Title: Clustering and Alignment of ChIP-Seq peaks based on their shapes
-Version: 1.1.0
+Version: 1.1
 Date: 2016-07-04
 Depends: R (>= 3.2), GenomicRanges
 Imports: shiny, fda, doParallel, GenomicAlignments, Rcpp, methods,
         foreach, parallel, GenomeInfoDb, Rsamtools, grDevices,
-        graphics, stats
+        graphics, stats, RColorBrewer
 Author: Alice Parodi [aut, cre], Marco Morelli [aut, cre], Laura M. Sangalli [aut], Piercesare Secchi [aut], Simone Vantini [aut]
 Maintainer: Alice Parodi <alicecarla.parodi@polimi.it>
 biocViews: StatisticalMethod, Clustering, ChIPSeq
@@ -15,4 +15,4 @@ NeedsCompilation: yes
 LinkingTo: Rcpp
 License: Artistic-2.0
 LazyData: TRUE
-Packaged: 2016-05-20 13:05:08 UTC; Alice
+Packaged: 2016-05-20 13:05:08 UTC

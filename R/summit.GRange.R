@@ -80,7 +80,15 @@ summit.GRange <- function(object, summit = NULL, rescale = FALSE)
     }
       
     # check that the summit is inside the ragne of the peak
-    if ( ( length( which(summit > width(object)) ) != 0 ) || 
+    
+    if(!is.null(object$width_spline))
+    {
+        width_obj <- object$width_spline
+    }else
+    {
+        width_obj <- width(object)
+    }
+    if ( ( length( which(summit > width_obj) ) != 0 ) || 
          ( length( which(summit < 0) ) != 0 ) )
     {
         stop ('summit must be inside the peak, i.e. greater than 0 and

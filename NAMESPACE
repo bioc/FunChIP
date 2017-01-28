@@ -11,9 +11,10 @@ import(GenomicRanges)
 import(GenomicAlignments)
 import(GenomeInfoDb)
 import(Rsamtools)
-importFrom("grDevices", "rainbow")
-importFrom("graphics", "legend", "lines", "par", "plot", "points")
+importFrom("grDevices", "rainbow", "gray.colors")
+importFrom("graphics", "legend", "lines", "par", "plot", "points","abline", "barplot", "text", "title")
 importFrom("stats", "median")
+import(RColorBrewer)
 
 
 exportMethods(summit_peak, choose_k,
@@ -22,4 +23,4 @@ exportMethods(summit_peak, choose_k,
               
 export(summit_peak, choose_k,
       cluster_peak, pileup_peak, distance_peak, plot_peak, 
-      smooth_peak, compute_fragments_length)
+      smooth_peak, compute_fragments_length, silhouette_plot, bending_index)

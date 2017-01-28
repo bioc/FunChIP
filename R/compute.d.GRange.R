@@ -110,12 +110,18 @@ choose_d <- function(x, range_d, bamf)
     )
     # if you need the plot of d vs distance
     plot(range_d[1] : range_d[2], l2_dist, xlab = 'dist positive - negative', ylab = 'global distance',
-         main = 'L2 distance squared normalized by the length of the domain')
-    
+         main = paste("L2 distance squared", " normalized by the length of the domain", sep =''))
+   
+#     pdf('FunChIP-fragment_length.pdf')
+#     par(mar = c(4,5,5,4))
+#     plot(range_d[1] : range_d[2], l2_dist, xlab = 'dist positive - negative', ylab = 'global distance',
+#          main = paste("L2 distance squared", " normalized by the length of the domain", sep ='\n'), 
+#          cex.main = 2, cex.axis = 1.5, cex.lab = 2, font.main = 1, cex = 2)
+#     
     minimum_l2 <- which.min(l2_dist)
     optimum_d <- (range_d[1] : range_d[2])[minimum_l2]
     points(optimum_d, l2_dist[minimum_l2], pch = 19, col= 2)
-    
+  #   dev.off()
     print(paste('estimated distance positive - negative read ', optimum_d, sep=''))
     
     read_length <- round(mean(scanBam(bamf)[[1]]$qwidth, na.rm=TRUE))

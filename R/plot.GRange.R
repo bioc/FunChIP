@@ -278,7 +278,7 @@ plot_row_data <- function(object, summit_here=NULL, line.plot, index, shift,
         
         for (i in 1:length(index))
         {
-            if (i==1) plot(to_plot[[i]], type='l', col=colour[i], lty=i, ylim=ylim, xlim=c(0, max(sapply(to_plot, length))), xlab='bp', ylab='counts', main='Original Peaks', lwd = lwd, cex.axis = cex.axis, cex.lab = cex.lab, cex.main = cex.main)
+            if (i==1) plot(to_plot[[i]], type='l', col=colour[i], lty=i, ylim=ylim, xlim=c(0, max(sapply(to_plot, length))), xlab='bp', ylab='counts', main='Original Peaks', lwd = lwd, font.main =1, cex.axis = cex.axis, cex.lab = cex.lab, cex.main = cex.main)
             else lines(to_plot[[i]], col=colour[i], lty=i, lwd=lwd)
         }
         
@@ -446,14 +446,14 @@ plot_row_data <- function(object, summit_here=NULL, line.plot, index, shift,
                 if (line.plot=='both')
                 {
                     plot(x_centered_list_counts[[i]], to_plot_counts[[i]], type='l', col=colour[i], 
-                          lty=1, ylim=ylim, xlim=xlim,  xlab='bp', ylab='counts', main=main,
+                          lty=1, ylim=ylim, xlim=xlim,  xlab='bp', ylab='counts', main= main , font.main = 1,
                           lwd = lwd, cex.axis = cex.axis, cex.lab = cex.lab, cex.main = cex.main)
                     lines(x_centered_list_spline[[i]], to_plot_spline[[i]], col=colour[i], lty=1, lwd=lwd)
                 }
                 if (line.plot=='spline')
                 {
-                    plot(x_centered_list_spline[[i]], to_plot_spline[[i]], type='l', col=colour[i], 
-                          lty=1, ylim=ylim, xlim=xlim,  xlab='bp', ylab='smoothed counts', main=main, 
+                    plot(x_centered_list_spline[[i]], to_plot_spline[[i]], type='l', col=colour[i], font.main = 1, 
+                          lty=1, ylim=ylim, xlim=xlim,  xlab='bp', ylab='smoothed counts', main= main , 
                           lwd = lwd, cex.axis = cex.axis, cex.lab = cex.lab, cex.main = cex.main)
                 }
                 if (line.plot=='count')

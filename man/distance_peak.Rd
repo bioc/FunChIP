@@ -6,7 +6,7 @@ Computing distance matrices among spline-smoothed peaks and among their derivati
 \description{
 Given a metric (\eqn{L^1}, \eqn{L^2} or \eqn{L^\infty}), it computes the
 pairwise distance among the spline approximation of the peaks and  among their
-derivatives.
+derivatives. If summit is provided, peaks are centered around the summit to compute the distances.
 }
 \usage{
 distance_peak(object, p = 1, rescale = FALSE)
