@@ -561,7 +561,7 @@ The \Rfunction{choose\_k} method allows, respectively, to remove all the metadat
 retaining all the details of the prepossessing and clustering (all the previously described
 metadata columns), with the extra column \Rcode{cluster} (\Rcode{cleaning = FALSE}).
 
-\subsection{The choice of the final classification with the ratio index and the Silhouette plot} \label{sect:silhouette}
+\subsection{The choice of the final classification with the bending index and the Silhouette plot} \label{sect:silhouette}
 
 In this section we present two analyses which could be useful to identify the most suitable value of the number of clusters. 
 
@@ -593,7 +593,7 @@ index_scaled
 
 @
 
-The function returns the value of the ratio index varying $k$ for
+The function returns the value of the bending index varying $k$ for
 both the classification with \Rcode{index\_shift} and without \Rcode{index\_NOshift} alignment, if both   
 classifications are stored in the \Rcode{object}. It can also show the plot of the global distance curves of Figure \ref{graphK}, if \Rcode{plot.graph.k = TRUE}.
 
@@ -626,7 +626,7 @@ sil <- silhouette_plot(peaks.cluster.scaled, p=2, weight = 1, alpha = 1,
 \caption{\textbf{Silhouette graph for the classification of  scaled peaks.} In the top panel, Silhouette plots for the classification without alignment, as a function of the number of clusters; in the bottom panel, Silhouette plots for the classification with alignment.}
 \end{figure}
 
-Th plots shown in Figure \ref{shilouette} represent the Silhouette index for all the peaks divided in the clusters, together with the global average Silhouette index. The average Silhouette index is maximum when the clustering is separating the data in the most suited manner and then this index has to be maximized to choose the best classification. In the case here presented here, the best classification according to this criteria is the classification with alignment and $k =2$ or $k=3$. Considering both Silhouette and the  ratio criteria, in the next section we present the results of the classification with alignement and $k=3$ clusters.
+Th plots shown in Figure \ref{shilouette} represent the Silhouette index for all the peaks divided in the clusters, together with the global average Silhouette index. The average Silhouette index is maximum when the clustering is separating the data in the most suited manner and then this index has to be maximized to choose the best classification. In the case here presented here, the best classification according to this criteria is the classification with alignment and $k =2$ or $k=3$. Considering both Silhouette and the  bending criteria, in the next section we present the results of the classification with alignement and $k=3$ clusters.
 
 \section{Visualization of the peaks} \label{sect:plot}
 The  \Rfunction{plot\_peak} method is a very flexible function
