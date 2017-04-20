@@ -482,12 +482,12 @@ It is relevant to point out that the algorithm can be run both on the original d
 
 # classification of the smooth peaks in different
 # numbers of clusters, from 1 ( no distinction, only shift )
-# to 6. 
+# to 4. 
 
 # here the analysis is run on the spline approximation
 # without scaling
-peaks.cluster <- cluster_peak(peaks.summit, parallel = FALSE ,  seeds=1:6,
-                                   n.clust = 1:6, shift = NULL,
+peaks.cluster <- cluster_peak(peaks.summit, parallel = FALSE ,  seeds=1:4,
+                                   n.clust = 1:4, shift = NULL,
                                    weight = 1, alpha = 1, p = 2, t.max = 2,
                                    plot.graph.k = TRUE, verbose = FALSE)
 head(peaks.cluster)
@@ -499,8 +499,8 @@ head(peaks.cluster)
 
 # here the analysis is run on the spline approximation
 # with scaling
-peaks.cluster.scaled <- cluster_peak(peaks.summit.scaled, parallel = FALSE ,  seeds=1:6,
-                                     n.clust = 1:6, shift = NULL,
+peaks.cluster.scaled <- cluster_peak(peaks.summit.scaled, parallel = FALSE ,  seeds=1:4,
+                                     n.clust = 1:4, shift = NULL,
                                      weight = 1, alpha = 1, p = 2, t.max = 2,
                                      plot.graph.k = TRUE, verbose = FALSE, 
                                      rescale = TRUE)
