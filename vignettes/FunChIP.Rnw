@@ -5,6 +5,11 @@
 %\VignetteEngine{utils::Sweave}
 
 \documentclass{article}
+
+<<style, echo=FALSE, results=tex>>=
+BiocStyle::latex()
+@
+
 \usepackage[algoruled]{algorithm2e}
 \usepackage{color}
 \usepackage{amsfonts}
@@ -16,11 +21,6 @@
 \SetKw{template}{Template:}
 \SetKw{assign}{Assignment:}
 \SetKw{norm}{Normalization:}
-
-<<style, echo=FALSE, results=tex>>=
-BiocStyle::latex()
-@
-
 
 \newcommand{\bam}{\texttt{BAM}}
 
