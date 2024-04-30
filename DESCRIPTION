@@ -1,7 +1,7 @@
 Package: FunChIP
 Type: Package
 Title: Clustering and Alignment of ChIP-Seq peaks based on their shapes
-Version: 1.29.1
+Version: 1.30.0
 Date: 2021-11-20
 Depends: R (>= 3.2), GenomicRanges
 Imports: shiny, fda, doParallel, GenomicAlignments, Rcpp, methods,
